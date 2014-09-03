@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ant [
+	<!ENTITY project.version "0.1-SNAPSHOT">
+]>
+<project name="PepperSprayFX" basedir="." default="create deployables" xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:m="http://ant.apache.org/ivy/maven" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+	<!-- defined maven snapshots and staging repository id and url -->
+	<property name="project.version" value="&project.version;"/>
+	<property name="maven-snapshots-repository-id" value="sonatype-nexus-snapshots" />
+	<property name="maven-snapshots-repository-url" value="https://oss.sonatype.org/content/repositories/snapshots/" />
+	<property name="maven-staging-repository-id" value="sonatype-nexus-staging" />
+	<property name="maven-staging-repository-url" value="https://oss.sonatype.org/service/local/staging/deploy/maven2/" />
+
+	<!-- define Maven coordinates -->
+	<property name="artifactId" value="PepperSprayFX" />
+	<property name="project.website" value="http://mrstampy.github.io/PepperSprayFX/"/>
+	<property name="project.description" value="PepperSprayFX - Encrypted Secure Communications GUI"/>
+
+	<!-- define artifacts' name, which follows the convention of Maven -->
+	<property name="maven-jar" value="${basedir}/build/${artifactId}-${project.version}.jar" />
+	<property name="maven-javadoc-jar" value="${basedir}/build/${artifactId}-${project.version}-javadoc.jar" />
+	<property name="maven-sources-jar" value="${basedir}/build/${artifactId}-${project.version}-sources.jar" />
+	<property name="maven-config-zip" value="${basedir}/build/${artifactId}-${project.version}-config.zip" />
+
+	<path id="project.classpath">
+		<fileset dir="${basedir}/lib">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
+	
+	<path id="project.src">
+		<dirset dir="${basedir}">
+			<include name="src"/>
+			<include name="test"/>
+		</dirset>
+	</path>
+
+	<target name="init">
+		<delete dir="build" />
+		<mkdir dir="build" />
+	</target>
+
+	<ivy:settings refid="ivysettings" file="${user.home}/.ivy/ivysettings-sonatype.xml"/>
+	
+	<target name="snapshot" depends="create deployables, deploy snapshot"/>	
+	<target name="staging" depends="create deployables, deploy staging"/>
+	
+	<target name="deploy snapshot">
+		<antcall target="copypom">
+			<param name="to.pom" value="${basedir}/build/${artifactId}-${project.version}.pom"/>
+			<param name="from.pom" value="${basedir}/pom.xml"/>
+		</antcall>
+		
+		<antcall target="deployImpl">
+			<param name="resolver" value="sonatype-nexus-snapshots"/>
+			<param name="status" value="integration"/>
+			<param name="project.module" value="${artifactId}"/>
+			<param name="project.ivy.file" value="ivy.xml"/>
+		</antcall>
+	</target>
+	
+	<target name="deploy staging">
+		<antcall target="copypom">
+			<param name="to.pom" value="${basedir}/build/${artifactId}-${project.version}.pom"/>
+			<param name="from.pom" value="${basedir}/pom.xml"/>
+		</antcall>
+		
+		<antcall target="deployImpl">
+			<param name="resolver" value="sonatype-nexus-staging"/>
+			<param name="status" value="release"/>
+			<param name="project.module" value="${artifactId}"/>
+			<param name="project.ivy.file" value="ivy.xml"/>
+		</antcall>
+	</target>
+	
+	<target name="copypom">
+		<copyfile dest="${to.pom}" src="${from.pom}"/>
+		<replace file="${to.pom}" token="$project.version" value="${project.version}"/>
+		<replace file="${to.pom}" token="$project.description" value="${project.description}"/>
+	</target>
+	
+	<target name="deployImpl">
+		<ivy:resolve file="${project.ivy.file}"/>
+		<ivy:publish
+			artifactspattern="${basedir}/build/[artifact]-[revision](-[classifier]).[ext]"
+			resolver="${resolver}"
+			srcivypattern="${basedir}/ivy.xml"
+			organisation="com.github.mrstampy"
+			module="${project.module}"
+			overwrite="true"
+			status="${status}"
+			pubrevision="${project.version}">
+		</ivy:publish>
+	</target>
+
+	<!--
+		Creates all the artifacts
+	-->
+	<target name="create deployables" depends="init">
+		<ivy:resolve />
+		<antcall target="create deployables impl"/>
+	</target>
+	<target name="create deployables impl" depends="create jar, create source jar, create javadoc jar" />
+
+	<target name="create jar">
+		<jar destfile="${maven-jar}" basedir="${basedir}/bin" excludes="logback.xml, **/test, **/test/**">
+			<manifest id="project.javadoc.manifest">
+				<attribute name="Built-By" value="Burton Alexander" />
+				<attribute name="Email-Address" value="burton@users.sourceforge.net" />
+				<attribute name="Project-Website" value="${project.website}" />
+				<attribute name="Release-Number" value="${project.version}" />
+				<attribute name="Release-Description" value="Integration" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="create source jar">
+		<jar destfile="${maven-sources-jar}" basedir="${basedir}/src">
+			<fileset dir="${basedir}/test"/>
+			<manifest id="project.javadoc.manifest">
+				<attribute name="Built-By" value="Burton Alexander" />
+				<attribute name="Email-Address" value="burton@users.sourceforge.net" />
+				<attribute name="Project-Website" value="${project.website}" />
+				<attribute name="Release-Number" value="${project.version}" />
+				<attribute name="Release-Description" value="Integration" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="create javadoc jar">
+		<delete dir="${basedir}/build/javadoc" />
+		<mkdir dir="${basedir}/build/javadoc" />
+		
+		<javadoc 
+			classpathref="project.classpath" 
+			sourcepathref="project.src" 
+			packagenames="com.github.mrstampy.*"
+			description="${project.description}"
+			doctitle="${project.description}"
+			header="${project.description}"
+			footer="brought to you by Mr. Stampy"
+			destdir="${basedir}/build/javadoc">
+		</javadoc>
+
+		<antcall target="jar creator">
+			<param name="jar.destfile" value="${maven-javadoc-jar}" />
+			<param name="jar.basedir" value="${basedir}/build/javadoc"/>
+		</antcall>
+	</target>
+	
+	<target name="jar creator">
+		<jar destfile="${jar.destfile}" basedir="${jar.basedir}">
+			<manifest id="project.javadoc.manifest">
+				<attribute name="Built-By" value="Burton Alexander" />
+				<attribute name="Email-Address" value="burton@users.sourceforge.net" />
+				<attribute name="Project-Website" value="${project.website}" />
+				<attribute name="Release-Number" value="${project.version}" />
+				<attribute name="Release-Description" value="Integration" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
