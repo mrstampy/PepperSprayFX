@@ -128,7 +128,7 @@ public class WebcamDemoButton {
 	 */
 	private void initLink() {
 		link.addEventHandler(ActionEvent.ANY, e -> openBrowser());
-		DropShadow ds = new DropShadow(10, Color.ALICEBLUE);
+		DropShadow ds = new DropShadow(10, Color.ORANGERED);
 		Glow glow = new Glow(0.1);
 		ds.setInput(glow);
 		link.setEffect(ds);
@@ -167,7 +167,7 @@ public class WebcamDemoButton {
 		Font newf = Font.font(existing.getFamily(), FontWeight.BOLD, FontPosture.ITALIC, 20);
 		label.setFont(newf);
 		label.setFill(Color.ALICEBLUE);
-		label.setEffect(new DropShadow(10, Color.ALICEBLUE));
+		label.setEffect(new DropShadow(10, Color.ORANGERED));
 		info.setFill(Color.ALICEBLUE);
 		info.setEffect(new DropShadow(10, Color.ALICEBLUE));
 	}
