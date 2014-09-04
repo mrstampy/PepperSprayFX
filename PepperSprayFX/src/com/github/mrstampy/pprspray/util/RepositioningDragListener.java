@@ -26,6 +26,9 @@ public class RepositioningDragListener implements EventHandler<MouseEvent> {
 	/** The last y. */
 	private AtomicDouble lastY = new AtomicDouble();
 
+	/** The increments. */
+	private int increments;
+
 	/**
 	 * The Constructor.
 	 *
@@ -33,7 +36,20 @@ public class RepositioningDragListener implements EventHandler<MouseEvent> {
 	 *          the window
 	 */
 	public RepositioningDragListener(Window window) {
+		this(window, 10);
+	}
+
+	/**
+	 * The Constructor.
+	 *
+	 * @param window
+	 *          the window
+	 * @param increments
+	 *          the increments
+	 */
+	public RepositioningDragListener(Window window, int increments) {
 		this.window = window;
+		this.increments = increments;
 		addEventHandlers();
 	}
 
@@ -69,12 +85,12 @@ public class RepositioningDragListener implements EventHandler<MouseEvent> {
 	 *          the e
 	 */
 	private void mouseDraggedDetected(MouseEvent e) {
-		int count = 10;
-		
+		int count = getIncrements();
+
 		double incrX = e.getX() / count;
 		double incrY = e.getY() / count;
-		
-		for(int i = 0; i < 20; i++) {
+
+		for (int i = 0; i < count; i++) {
 			window.setX(lastX.get() + incrX);
 			window.setY(lastY.get() + incrY);
 		}
@@ -97,6 +113,25 @@ public class RepositioningDragListener implements EventHandler<MouseEvent> {
 	private void setLast() {
 		lastX.set(window.getX());
 		lastY.set(window.getY());
+	}
+
+	/**
+	 * Gets the increments.
+	 *
+	 * @return the increments
+	 */
+	public int getIncrements() {
+		return increments;
+	}
+
+	/**
+	 * Sets the increments.
+	 *
+	 * @param increments
+	 *          the increments
+	 */
+	public void setIncrements(int increments) {
+		this.increments = increments;
 	}
 
 }
