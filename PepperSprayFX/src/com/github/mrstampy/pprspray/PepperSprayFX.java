@@ -215,7 +215,7 @@ public class PepperSprayFX extends Application {
 		public void mediaStreamerEvent(MediaStreamerEvent event) {
 			switch (event.getType()) {
 			case NEGOTIATION_FAILED:
-				Platform.runLater(() -> showNegotiationsFailed());
+				Platform.runLater(() -> showNegotiationsFailed(event));
 				break;
 			default:
 				break;
@@ -226,7 +226,7 @@ public class PepperSprayFX extends Application {
 		/**
 		 * Show negotiations failed.
 		 */
-		private void showNegotiationsFailed() {
+		private void showNegotiationsFailed(MediaStreamerEvent event) {
 			demoButton.reset();
 
 			//@formatter:off
@@ -234,7 +234,7 @@ public class PepperSprayFX extends Application {
 					.create()
 					.title("Webcam request denied")
 					.owner(stage)
-					.message("Computer says no.")
+					.message(event.getSource().getDestination() + " says no.")
 					.showInformation();
 			//@formatter:on
 		}

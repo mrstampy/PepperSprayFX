@@ -28,6 +28,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Glow;
 import javafx.scene.layout.HBox;
@@ -132,6 +133,7 @@ public class WebcamDemoButton {
 		Glow glow = new Glow(0.1);
 		ds.setInput(glow);
 		link.setEffect(ds);
+		link.setTooltip(new Tooltip(PEPPER_SPRAY_CORE_URI));
 	}
 
 	/**
