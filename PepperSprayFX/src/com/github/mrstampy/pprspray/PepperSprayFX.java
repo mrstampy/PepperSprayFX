@@ -76,6 +76,8 @@ public class PepperSprayFX extends Application {
 	@SuppressWarnings("unused")
 	private RepositioningDragListener dragListener;
 
+	private WebcamDisplay currentDisplay;
+
 	/**
 	 * The Constructor initializes state and registers a
 	 * {@link PepperSprayFXNegotiationSubscriber} with the
@@ -142,7 +144,17 @@ public class PepperSprayFX extends Application {
 				.showConfirm();
 		//@formatter:on
 
-		if ("YES".equals(action.toString())) System.exit(0);
+		if ("YES".equals(action.toString())) shutdown();
+	}
+
+	private void shutdown() {
+		Thread t = new Thread() {
+			public void run() {
+				if (currentDisplay != null && currentDisplay.isOpen()) currentDisplay.destroy();
+				System.exit(0);
+			}
+		};
+		t.start();
 	}
 
 	/**
@@ -170,6 +182,7 @@ public class PepperSprayFX extends Application {
 	 * @see AcceptingNegotationSubscriber
 	 */
 	public void displayWebcam(WebcamDisplay display) {
+		this.currentDisplay = display;
 		Popup popup = new Popup();
 		popup.getContent().add(display.getLayout());
 		display.setPopup(popup);
