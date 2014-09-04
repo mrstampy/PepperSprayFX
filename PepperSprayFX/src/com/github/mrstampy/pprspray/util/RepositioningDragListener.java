@@ -7,6 +7,7 @@ import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
@@ -42,6 +43,7 @@ public class RepositioningDragListener implements EventHandler<MouseEvent> {
 	private void addEventHandlers() {
 		window.addEventHandler(MouseEvent.DRAG_DETECTED, this);
 		window.addEventHandler(MouseEvent.MOUSE_DRAGGED, this);
+		window.addEventHandler(WindowEvent.WINDOW_SHOWN, e -> setLast());
 	}
 
 	/*
@@ -67,8 +69,15 @@ public class RepositioningDragListener implements EventHandler<MouseEvent> {
 	 *          the e
 	 */
 	private void mouseDraggedDetected(MouseEvent e) {
-		window.setX(lastX.get() + e.getX());
-		window.setY(lastY.get() + e.getY());
+		int count = 20;
+		
+		double incrX = e.getX() / count;
+		double incrY = e.getY() / count;
+		
+		for(int i = 0; i < 20; i++) {
+			window.setX(lastX.get() + incrX);
+			window.setY(lastY.get() + incrY);
+		}
 		setLast();
 	}
 
