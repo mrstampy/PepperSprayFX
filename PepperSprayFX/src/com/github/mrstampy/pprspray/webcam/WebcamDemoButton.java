@@ -29,6 +29,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.effect.Glow;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -127,7 +128,10 @@ public class WebcamDemoButton {
 	 */
 	private void initLink() {
 		link.addEventHandler(ActionEvent.ANY, e -> openBrowser());
-		link.setEffect(new DropShadow(15, Color.ALICEBLUE));
+		DropShadow ds = new DropShadow(10, Color.ALICEBLUE);
+		Glow glow = new Glow(0.1);
+		ds.setInput(glow);
+		link.setEffect(ds);
 	}
 
 	/**

@@ -175,6 +175,7 @@ public class PepperSprayFX extends Application {
 		display.setPopup(popup);
 		popup.centerOnScreen();
 		new RepositioningDragListener(popup);
+		popup.setOpacity(0.75);
 		popup.show(this.stage);
 	}
 
