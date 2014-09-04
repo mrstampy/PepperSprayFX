@@ -49,6 +49,8 @@ import rx.schedulers.Schedulers;
 import com.github.mrstampy.pprspray.channel.PepperSprayChannel;
 import com.github.mrstampy.pprspray.core.streamer.webcam.WebcamStreamer;
 import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamEvent;
+import com.github.sarxos.webcam.WebcamListener;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -208,14 +210,14 @@ public class WebcamDemoButton {
 
 			@Override
 			public void call() {
+				disableButton(true);
+				
 				setButtonText("Starting...");
 
 				channel1 = initChannel();
 				channel2 = initChannel();
 
 				initStreamer();
-
-				setButtonText("Stop");
 			}
 		});
 	}
@@ -225,10 +227,31 @@ public class WebcamDemoButton {
 	 */
 	private void initStreamer() {
 		final Webcam webcam = Webcam.getDefault();
+		
+		webcam.addWebcamListener(new WebcamListener() {
+			
+			@Override
+			public void webcamOpen(WebcamEvent we) {
+				setButtonText("Stop");
+				disableButton(false);
+			}
+			
+			@Override
+			public void webcamDisposed(WebcamEvent we) {
+			}
+			
+			@Override
+			public void webcamClosed(WebcamEvent we) {
+			}
+		});
+		
 		streamer = new WebcamStreamer(webcam, channel1, channel2.localAddress());
 		streamer.connect();
-		
 		svc.createWorker().schedule(() -> webcam.open());
+	}
+	
+	private void disableButton(boolean disable) {
+		Platform.runLater(() -> startWebcam.setDisable(disable));
 	}
 
 	/**
