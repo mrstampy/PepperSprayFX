@@ -26,6 +26,7 @@ import javafx.geometry.Pos;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
+import javafx.stage.Popup;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,12 +43,21 @@ import com.github.mrstampy.pprspray.core.receiver.MediaEventBus;
  * @see AbstractMediaProcessor
  */
 public class WebcamDisplay extends AbstractMediaProcessor {
+
+	/** The Constant log. */
 	private static final Logger log = LoggerFactory.getLogger(WebcamDisplay.class);
 
+	/** The size. */
 	private int size = 400;
 
+	/** The image view. */
 	private ImageView imageView;
+
+	/** The vbox. */
 	private VBox vbox;
+
+	/** The popup. */
+	private Popup popup;
 
 	/**
 	 * The Constructor.
@@ -74,6 +84,9 @@ public class WebcamDisplay extends AbstractMediaProcessor {
 		return vbox;
 	}
 
+	/**
+	 * Inits the.
+	 */
 	private void init() {
 		imageView = new ImageView();
 		imageView.setFitWidth(getSize() * 1.2);
@@ -82,7 +95,7 @@ public class WebcamDisplay extends AbstractMediaProcessor {
 		vbox = new VBox(10);
 		vbox.setAlignment(Pos.CENTER);
 
-		vbox.getChildren().add(imageView);
+		vbox.getChildren().addAll(imageView);
 	}
 
 	/*
@@ -97,6 +110,12 @@ public class WebcamDisplay extends AbstractMediaProcessor {
 		Platform.runLater(() -> displayImage(image));
 	}
 
+	/**
+	 * Display image.
+	 *
+	 * @param image
+	 *          the image
+	 */
 	private void displayImage(Image image) {
 		try {
 			imageView.setImage(image);
@@ -105,6 +124,13 @@ public class WebcamDisplay extends AbstractMediaProcessor {
 		}
 	}
 
+	/**
+	 * Creates the image.
+	 *
+	 * @param event
+	 *          the event
+	 * @return the image
+	 */
 	private Image createImage(MediaEvent event) {
 		ByteArrayInputStream bais = new ByteArrayInputStream(event.getProcessed());
 
@@ -134,7 +160,16 @@ public class WebcamDisplay extends AbstractMediaProcessor {
 	 */
 	@Override
 	protected boolean closeImpl() {
+		Platform.runLater(() -> closeWebcamDisplay());
 		return true;
+	}
+
+	/**
+	 * Close webcam display.
+	 */
+	private void closeWebcamDisplay() {
+		imageView.setImage(null);
+		getPopup().hide();
 	}
 
 	/**
@@ -154,6 +189,25 @@ public class WebcamDisplay extends AbstractMediaProcessor {
 	 */
 	public void setSize(int size) {
 		this.size = size;
+	}
+
+	/**
+	 * Gets the popup.
+	 *
+	 * @return the popup
+	 */
+	public Popup getPopup() {
+		return popup;
+	}
+
+	/**
+	 * Sets the popup.
+	 *
+	 * @param popup
+	 *          the popup
+	 */
+	public void setPopup(Popup popup) {
+		this.popup = popup;
 	}
 
 }

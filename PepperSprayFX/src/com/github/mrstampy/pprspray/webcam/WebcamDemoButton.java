@@ -18,12 +18,28 @@
  */
 package com.github.mrstampy.pprspray.webcam;
 
+import java.awt.Desktop;
+import java.net.URI;
 import java.util.concurrent.Executors;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Hyperlink;
+import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import rx.Scheduler;
 import rx.functions.Action0;
 import rx.schedulers.Schedulers;
@@ -39,14 +55,37 @@ import com.github.sarxos.webcam.Webcam;
  */
 public class WebcamDemoButton {
 
+	/** The Constant PEPPER_SPRAY_CORE_URI. */
+	private static final String PEPPER_SPRAY_CORE_URI = "https://github.com/mrstampy/PepperSpray-core";
+
+	/** The Constant log. */
+	private static final Logger log = LoggerFactory.getLogger(WebcamDemoButton.class);
+
+	/** The start webcam. */
 	private ToggleButton startWebcam = new ToggleButton("Start Webcam");
 
+	/** The box. */
 	private VBox box = new VBox(10);
 
+	/** The label. */
+	private Label label = new Label("PepperSprayFX");
+
+	/** The info. */
+	private Label info = new Label("Demo application for");
+
+	/** The link. */
+	private Hyperlink link = new Hyperlink("PepperSpray-core");
+
+	/** The channel1. */
 	private PepperSprayChannel channel1;
+
+	/** The channel2. */
 	private PepperSprayChannel channel2;
+
+	/** The streamer. */
 	private WebcamStreamer streamer;
 
+	/** The svc. */
 	private Scheduler svc = Schedulers.from(Executors.newSingleThreadExecutor());
 
 	/**
@@ -65,12 +104,70 @@ public class WebcamDemoButton {
 		return box;
 	}
 
+	/**
+	 * Reset.
+	 */
+	public void reset() {
+		startWebcam.fire();
+	}
+
+	/**
+	 * Inits the.
+	 */
 	private void init() {
+		initLabel();
+		initLink();
 		startWebcam.addEventHandler(ActionEvent.ACTION, e -> buttonClicked());
-		box.getChildren().add(startWebcam);
+		box.getChildren().addAll(label, startWebcam, getFooter());
+		box.setAlignment(Pos.CENTER);
+	}
+
+	/**
+	 * Inits the link.
+	 */
+	private void initLink() {
+		link.addEventHandler(ActionEvent.ANY, e -> openBrowser());
+	}
+
+	/**
+	 * Open browser.
+	 */
+	private void openBrowser() {
+		try {
+			Desktop.getDesktop().browse(new URI(PEPPER_SPRAY_CORE_URI));
+		} catch (Exception e) {
+			log.error("Could not open browser", e);
+		}
+	}
+
+	/**
+	 * Gets the footer.
+	 *
+	 * @return the footer
+	 */
+	private Node getFooter() {
+		HBox box = new HBox();
+
+		box.setAlignment(Pos.BASELINE_CENTER);
+		box.getChildren().addAll(info, link);
+
+		return box;
+	}
+
+	/**
+	 * Inits the label.
+	 */
+	private void initLabel() {
+		Font existing = label.getFont();
+		Font newf = Font.font(existing.getFamily(), FontWeight.BOLD, FontPosture.ITALIC, 20);
+		label.setFont(newf);
+		label.setEffect(new DropShadow(0.5, Color.ROYALBLUE));
 	}
 
 	// Webcam acquisition must be off the JavaFX thread.
+	/**
+	 * Button clicked.
+	 */
 	private void buttonClicked() {
 		if (startWebcam.isSelected()) {
 			startWebcam();
@@ -79,17 +176,23 @@ public class WebcamDemoButton {
 		}
 	}
 
+	/**
+	 * Stop webcam.
+	 */
 	private void stopWebcam() {
 		svc.createWorker().schedule(new Action0() {
 
 			@Override
 			public void call() {
-				streamer.destroy();
 				setButtonText("Start Webcam");
+				streamer.destroy();
 			}
 		});
 	}
 
+	/**
+	 * Start webcam.
+	 */
 	private void startWebcam() {
 		svc.createWorker().schedule(new Action0() {
 
@@ -107,16 +210,30 @@ public class WebcamDemoButton {
 		});
 	}
 
+	/**
+	 * Inits the streamer.
+	 */
 	private void initStreamer() {
 		Webcam webcam = Webcam.getDefault();
 		streamer = new WebcamStreamer(webcam, channel1, channel2.localAddress());
 		streamer.connect();
 	}
 
+	/**
+	 * Sets the button text.
+	 *
+	 * @param text
+	 *          the button text
+	 */
 	private void setButtonText(String text) {
 		Platform.runLater(() -> startWebcam.setText(text));
 	}
 
+	/**
+	 * Inits the channel.
+	 *
+	 * @return the pepper spray channel
+	 */
 	private PepperSprayChannel initChannel() {
 		PepperSprayChannel channel = new PepperSprayChannel();
 
