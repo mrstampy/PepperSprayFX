@@ -69,7 +69,7 @@ public class RepositioningDragListener implements EventHandler<MouseEvent> {
 	 *          the e
 	 */
 	private void mouseDraggedDetected(MouseEvent e) {
-		int count = 20;
+		int count = 10;
 		
 		double incrX = e.getX() / count;
 		double incrY = e.getY() / count;
