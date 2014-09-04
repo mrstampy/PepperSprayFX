@@ -27,8 +27,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.effect.GaussianBlur;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -102,7 +106,12 @@ public class PepperSprayFX extends Application {
 
 		dragListener = new RepositioningDragListener(stage);
 
-		Scene scene = new Scene(demoButton.getLayout());
+		VBox layout = demoButton.getLayout();
+		layout.setBackground(Background.EMPTY);
+		layout.setEffect(new GaussianBlur(0.2));
+
+		Color c = Color.BLACK;
+		Scene scene = new Scene(layout, new Color(c.getRed(), c.getGreen(), c.getBlue(), 0.25));
 
 		stage.setScene(scene);
 		stage.initStyle(StageStyle.TRANSPARENT);

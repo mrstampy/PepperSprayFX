@@ -27,7 +27,6 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
-import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.HBox;
@@ -36,6 +35,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,10 +68,10 @@ public class WebcamDemoButton {
 	private VBox box = new VBox(10);
 
 	/** The label. */
-	private Label label = new Label("PepperSprayFX");
+	private Text label = new Text("PepperSprayFX");
 
 	/** The info. */
-	private Label info = new Label("Demo application for");
+	private Text info = new Text("Demo application for");
 
 	/** The link. */
 	private Hyperlink link = new Hyperlink("PepperSpray-core");
@@ -127,6 +127,7 @@ public class WebcamDemoButton {
 	 */
 	private void initLink() {
 		link.addEventHandler(ActionEvent.ANY, e -> openBrowser());
+		link.setEffect(new DropShadow(15, Color.ALICEBLUE));
 	}
 
 	/**
@@ -161,7 +162,10 @@ public class WebcamDemoButton {
 		Font existing = label.getFont();
 		Font newf = Font.font(existing.getFamily(), FontWeight.BOLD, FontPosture.ITALIC, 20);
 		label.setFont(newf);
-		label.setEffect(new DropShadow(0.5, Color.ROYALBLUE));
+		label.setFill(Color.ALICEBLUE);
+		label.setEffect(new DropShadow(10, Color.ALICEBLUE));
+		info.setFill(Color.ALICEBLUE);
+		info.setEffect(new DropShadow(10, Color.ALICEBLUE));
 	}
 
 	// Webcam acquisition must be off the JavaFX thread.
