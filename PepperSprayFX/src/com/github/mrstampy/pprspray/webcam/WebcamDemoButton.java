@@ -224,9 +224,11 @@ public class WebcamDemoButton {
 	 * Inits the streamer.
 	 */
 	private void initStreamer() {
-		Webcam webcam = Webcam.getDefault();
+		final Webcam webcam = Webcam.getDefault();
 		streamer = new WebcamStreamer(webcam, channel1, channel2.localAddress());
 		streamer.connect();
+		
+		svc.createWorker().schedule(() -> webcam.open());
 	}
 
 	/**
