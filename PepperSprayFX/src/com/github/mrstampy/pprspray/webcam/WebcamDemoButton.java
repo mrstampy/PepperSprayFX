@@ -47,10 +47,11 @@ import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 
 import com.github.mrstampy.pprspray.channel.PepperSprayChannel;
+import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEvent;
+import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEventBus;
 import com.github.mrstampy.pprspray.core.streamer.webcam.WebcamStreamer;
 import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamEvent;
-import com.github.sarxos.webcam.WebcamListener;
+import com.google.common.eventbus.Subscribe;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -112,13 +113,23 @@ public class WebcamDemoButton {
 	 * Reset.
 	 */
 	public void reset() {
-		startWebcam.fire();
+		boolean selected = startWebcam.isSelected();
+		startWebcam.setSelected(!selected);
+
+		if (startWebcam.isSelected()) {
+			setButtonText("Stop");
+			disableButton(false);
+		} else {
+			setButtonText("Start Webcam");
+			disableButton(false);
+		}
 	}
 
 	/**
 	 * Inits the.
 	 */
 	private void init() {
+		MediaStreamerEventBus.register(this);
 		initLabel();
 		initLink();
 		startWebcam.addEventHandler(ActionEvent.ACTION, e -> buttonClicked());
@@ -196,7 +207,6 @@ public class WebcamDemoButton {
 
 			@Override
 			public void call() {
-				setButtonText("Start Webcam");
 				streamer.destroy();
 			}
 		});
@@ -211,7 +221,7 @@ public class WebcamDemoButton {
 			@Override
 			public void call() {
 				disableButton(true);
-				
+
 				setButtonText("Starting...");
 
 				channel1 = initChannel();
@@ -227,29 +237,35 @@ public class WebcamDemoButton {
 	 */
 	private void initStreamer() {
 		final Webcam webcam = Webcam.getDefault();
-		
-		webcam.addWebcamListener(new WebcamListener() {
-			
-			@Override
-			public void webcamOpen(WebcamEvent we) {
-				setButtonText("Stop");
-				disableButton(false);
-			}
-			
-			@Override
-			public void webcamDisposed(WebcamEvent we) {
-			}
-			
-			@Override
-			public void webcamClosed(WebcamEvent we) {
-			}
-		});
-		
+
 		streamer = new WebcamStreamer(webcam, channel1, channel2.localAddress());
 		streamer.connect();
 		svc.createWorker().schedule(() -> webcam.open());
 	}
-	
+
+	/**
+	 * Media streamer event.
+	 *
+	 * @param event
+	 *          the event
+	 */
+	@Subscribe
+	public void mediaStreamerEvent(MediaStreamerEvent event) {
+		switch (event.getType()) {
+		case DESTROYED:
+			setButtonText("Start Webcam");
+			disableButton(false);
+			break;
+		case STARTED:
+			setButtonText("Stop");
+			disableButton(false);
+			break;
+		default:
+			break;
+
+		}
+	}
+
 	private void disableButton(boolean disable) {
 		Platform.runLater(() -> startWebcam.setDisable(disable));
 	}
