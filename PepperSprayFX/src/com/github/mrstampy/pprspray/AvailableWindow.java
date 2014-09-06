@@ -61,15 +61,11 @@ public class AvailableWindow extends Popup {
 	}
 
 	private void init() {
-		setWidth(320);
-		setHeight(180);
 		getContent().add(createContent());
 	}
 
 	private Node createContent() {
 		VBox box = new VBox(5);
-		box.setMinHeight(180);
-		box.setMinWidth(320);
 		box.setAlignment(Pos.CENTER);
 
 		for (ServiceInfo si : getAvailable()) {
@@ -80,13 +76,13 @@ public class AvailableWindow extends Popup {
 	}
 
 	private Node createRow(ServiceInfo si) {
-		Text text = new Text(si.getInetAddresses()[0] + ":" + si.getPort());
+		Text text = new Text(si.getInetAddresses()[0] + ":" + si.getPort() + " " + si.getName());
 
 		text.addEventHandler(MouseEvent.MOUSE_PRESSED, e -> evaluate(e, si));
 		Font existing = text.getFont();
-		text.setFont(Font.font(existing.getFamily(), FontWeight.BOLD, FontPosture.REGULAR, 30));
+		text.setFont(Font.font(existing.getFamily(), FontWeight.EXTRA_BOLD, FontPosture.REGULAR, 20));
 		text.setFill(Color.ORANGERED);
-		text.setEffect(new DropShadow(10, Color.GREENYELLOW));
+		text.setEffect(new DropShadow(20, Color.GREENYELLOW));
 
 		return text;
 	}

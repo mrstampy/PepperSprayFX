@@ -62,6 +62,7 @@ import rx.schedulers.Schedulers;
 import com.github.mrstampy.pprspray.PepperSprayFX;
 import com.github.mrstampy.pprspray.channel.PepperSprayChannel;
 import com.github.mrstampy.pprspray.core.discovery.PepperSprayDiscoveryService;
+import com.github.mrstampy.pprspray.core.streamer.MediaStreamType;
 import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEvent;
 import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEventBus;
 import com.github.mrstampy.pprspray.core.streamer.webcam.WebcamStreamer;
@@ -249,7 +250,7 @@ public class WebcamDemoButton {
 			
 			ipAddress.setText(channel.localAddress().toString());
 
-			discoveryService.registerPepperSprayService(channel);
+			discoveryService.registerPepperSprayServices(channel, MediaStreamType.VIDEO);
 			Platform.runLater(() -> PepperSprayFX.getInstance().showHelp());
 		} catch (Exception e) {
 			log.error("Could not initialize channels", e);
