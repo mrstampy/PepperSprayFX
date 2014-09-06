@@ -95,6 +95,8 @@ public class WebcamDemoButton {
 
 	/** The link. */
 	private Hyperlink link = new Hyperlink("PepperSpray-core");
+	
+	private Text ipAddress = new Text();
 
 	/** The channel. */
 	private PepperSprayChannel channel;
@@ -235,7 +237,7 @@ public class WebcamDemoButton {
 
 		initLabel();
 		initLink();
-		box.getChildren().addAll(label, getFooter());
+		box.getChildren().addAll(label, getFooter(), ipAddress);
 		box.setAlignment(Pos.CENTER);
 	}
 
@@ -244,6 +246,8 @@ public class WebcamDemoButton {
 			Platform.runLater(() -> showInitPopOver());
 			Platform.runLater(() -> disableControls(true));
 			channel = initChannel();
+			
+			ipAddress.setText(channel.localAddress().toString());
 
 			discoveryService.registerPepperSprayService(channel);
 			Platform.runLater(() -> PepperSprayFX.getInstance().showHelp());
@@ -332,6 +336,9 @@ public class WebcamDemoButton {
 		label.setEffect(new DropShadow(10, Color.ORANGERED));
 		info.setFill(Color.ALICEBLUE);
 		info.setEffect(new DropShadow(10, Color.ALICEBLUE));
+		ipAddress.setFill(Color.CORNFLOWERBLUE);
+		ipAddress.setEffect(new DropShadow(10, Color.ORANGERED));
+		ipAddress.setOpacity(0.5);
 	}
 
 	/**
