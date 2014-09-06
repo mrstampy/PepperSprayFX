@@ -19,15 +19,25 @@
 package com.github.mrstampy.pprspray.webcam;
 
 import java.awt.Desktop;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Glow;
@@ -38,18 +48,26 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.util.Duration;
 
+import javax.jmdns.ServiceInfo;
+
+import org.controlsfx.control.PopOver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Scheduler;
-import rx.functions.Action0;
 import rx.schedulers.Schedulers;
 
+import com.github.mrstampy.pprspray.PepperSprayFX;
 import com.github.mrstampy.pprspray.channel.PepperSprayChannel;
+import com.github.mrstampy.pprspray.core.discovery.PepperSprayDiscoveryService;
 import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEvent;
 import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEventBus;
 import com.github.mrstampy.pprspray.core.streamer.webcam.WebcamStreamer;
+import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryEvent;
+import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryEventBus;
+import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryService;
 import com.github.sarxos.webcam.Webcam;
 import com.google.common.eventbus.Subscribe;
 
@@ -66,9 +84,6 @@ public class WebcamDemoButton {
 	/** The Constant log. */
 	private static final Logger log = LoggerFactory.getLogger(WebcamDemoButton.class);
 
-	/** The start webcam. */
-	private ToggleButton startWebcam = new ToggleButton("Start Webcam");
-
 	/** The box. */
 	private VBox box = new VBox(10);
 
@@ -81,23 +96,112 @@ public class WebcamDemoButton {
 	/** The link. */
 	private Hyperlink link = new Hyperlink("PepperSpray-core");
 
-	/** The channel1. */
-	private PepperSprayChannel channel1;
-
-	/** The channel2. */
-	private PepperSprayChannel channel2;
+	/** The channel. */
+	private PepperSprayChannel channel;
 
 	/** The streamer. */
 	private WebcamStreamer streamer;
 
 	/** The svc. */
-	private Scheduler svc = Schedulers.from(Executors.newSingleThreadExecutor());
+	private Scheduler svc = Schedulers.from(Executors.newFixedThreadPool(2));
+
+	private CountDownLatch channelInit = new CountDownLatch(1);
+
+	private PepperSprayDiscoveryService<ServiceInfo> discoveryService = JmDNSDiscoveryService.DISCOVERY;
 
 	/**
 	 * The Constructor.
 	 */
 	public WebcamDemoButton() {
 		init();
+	}
+
+	/**
+	 * Discovery event.
+	 *
+	 * @param event
+	 *          the event
+	 */
+	@Subscribe
+	public void discoveryEvent(JmDNSDiscoveryEvent event) {
+		switch (event.getType()) {
+		case SHUTDOWN:
+			Platform.runLater(() -> showShuttingDown());
+			break;
+		default:
+			break;
+
+		}
+	}
+
+	private void showShuttingDown() {
+		disableControls(true);
+
+		PopOver poptart = new PopOver(createShutdownContent());
+		poptart.setDetachable(true);
+		poptart.setDetachedTitle("PepperSpray DNS Shutting Down");
+		poptart.setOpacity(0.5);
+		poptart.show(box);
+
+		svc.createWorker().schedule(() -> Platform.runLater(() -> fadePopOver(poptart)), 5, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Gets the registered.
+	 *
+	 * @return the registered
+	 */
+	public List<ServiceInfo> getRegistered() {
+		//@formatter:off
+		return discoveryService
+				.getRegisteredPepperSprayServices()
+				.stream()
+				.filter(si -> !isForChannel(si))
+				.collect(Collectors.toList());
+		//@formatter:on
+	}
+
+	private boolean isForChannel(ServiceInfo si) {
+		return si.getPort() == channel.getPort()
+				&& containsAddress(si.getInetAddresses(), channel.localAddress().getAddress());
+	}
+
+	private boolean containsAddress(InetAddress[] inetAddresses, InetAddress address) {
+		//@formatter:off
+		return Arrays
+				.asList(inetAddresses)
+				.stream()
+				.anyMatch(ia -> ia.equals(address));
+		//@formatter:on
+	}
+
+	/**
+	 * Fade pop over.
+	 *
+	 * @param poptart
+	 *          the poptart
+	 */
+	public void fadePopOver(PopOver poptart) {
+		if (!poptart.isShowing()) return;
+		Timeline timeline = new Timeline(getKeyFrame(poptart));
+		timeline.setOnFinished(e -> poptart.hide());
+		timeline.play();
+	}
+
+	private KeyFrame getKeyFrame(PopOver poptart) {
+		return new KeyFrame(Duration.seconds(5), getKeyValues(poptart));
+	}
+
+	private KeyValue getKeyValues(PopOver poptart) {
+		return new KeyValue(poptart.opacityProperty(), 0.0);
+	}
+
+	private Node createShutdownContent() {
+		Text text = new Text(" Please wait while the PepperSpray discovery service shuts down ");
+
+		text.setFill(Color.ROYALBLUE);
+
+		return text;
 	}
 
 	/**
@@ -110,19 +214,14 @@ public class WebcamDemoButton {
 	}
 
 	/**
-	 * Reset.
+	 * Destroy.
 	 */
-	public void reset() {
-		boolean selected = startWebcam.isSelected();
-		startWebcam.setSelected(!selected);
+	public void destroy() {
+		svc.createWorker().schedule(() -> destroyImpl());
+	}
 
-		if (startWebcam.isSelected()) {
-			setButtonText("Stop");
-			disableButton(false);
-		} else {
-			setButtonText("Start Webcam");
-			disableButton(false);
-		}
+	private void destroyImpl() {
+		streamer.destroy();
 	}
 
 	/**
@@ -130,11 +229,59 @@ public class WebcamDemoButton {
 	 */
 	private void init() {
 		MediaStreamerEventBus.register(this);
+		JmDNSDiscoveryEventBus.register(this);
+
+		svc.createWorker().schedule(() -> initChannels());
+
 		initLabel();
 		initLink();
-		startWebcam.addEventHandler(ActionEvent.ACTION, e -> buttonClicked());
-		box.getChildren().addAll(label, startWebcam, getFooter());
+		box.getChildren().addAll(label, getFooter());
 		box.setAlignment(Pos.CENTER);
+	}
+
+	private void initChannels() {
+		try {
+			Platform.runLater(() -> showInitPopOver());
+			Platform.runLater(() -> disableControls(true));
+			channel = initChannel();
+
+			discoveryService.registerPepperSprayService(channel);
+			Platform.runLater(() -> PepperSprayFX.getInstance().showHelp());
+		} catch (Exception e) {
+			log.error("Could not initialize channels", e);
+		} finally {
+			channelInit.countDown();
+			Platform.runLater(() -> disableControls(false));
+		}
+	}
+
+	private void showInitPopOver() {
+		PopOver poptart = new PopOver(createInitContent());
+		poptart.setDetachable(true);
+		poptart.setDetachedTitle("PepperSpray DNS Starting Up");
+		poptart.setOpacity(0.5);
+		poptart.show(box);
+
+		svc.createWorker().schedule(() -> Platform.runLater(() -> fadePopOver(poptart)), 3, TimeUnit.SECONDS);
+	}
+
+	private Node createInitContent() {
+		Text text = new Text(" Please wait while the PepperSpray discovery service starts up ");
+
+		text.setFill(Color.ROYALBLUE);
+
+		return text;
+	}
+
+	/**
+	 * Disable controls.
+	 *
+	 * @param disable
+	 *          the disable
+	 */
+	public void disableControls(boolean disable) {
+		PepperSprayFX.setCursor(disable ? Cursor.WAIT : Cursor.DEFAULT);
+		box.setDisable(disable);
 	}
 
 	/**
@@ -187,58 +334,16 @@ public class WebcamDemoButton {
 		info.setEffect(new DropShadow(10, Color.ALICEBLUE));
 	}
 
-	// Webcam acquisition must be off the JavaFX thread.
-	/**
-	 * Button clicked.
-	 */
-	private void buttonClicked() {
-		if (startWebcam.isSelected()) {
-			startWebcam();
-		} else {
-			stopWebcam();
-		}
-	}
-
-	/**
-	 * Stop webcam.
-	 */
-	private void stopWebcam() {
-		svc.createWorker().schedule(new Action0() {
-
-			@Override
-			public void call() {
-				streamer.destroy();
-			}
-		});
-	}
-
-	/**
-	 * Start webcam.
-	 */
-	private void startWebcam() {
-		svc.createWorker().schedule(new Action0() {
-
-			@Override
-			public void call() {
-				disableButton(true);
-
-				setButtonText("Starting...");
-
-				channel1 = initChannel();
-				channel2 = initChannel();
-
-				initStreamer();
-			}
-		});
-	}
-
 	/**
 	 * Inits the streamer.
+	 *
+	 * @param address
+	 *          the address
 	 */
-	private void initStreamer() {
+	public void initStreamer(InetSocketAddress address) {
 		final Webcam webcam = Webcam.getDefault();
 
-		streamer = new WebcamStreamer(webcam, channel1, channel2.localAddress());
+		streamer = new WebcamStreamer(webcam, channel, address);
 		streamer.connect();
 		svc.createWorker().schedule(() -> webcam.open());
 	}
@@ -253,12 +358,10 @@ public class WebcamDemoButton {
 	public void mediaStreamerEvent(MediaStreamerEvent event) {
 		switch (event.getType()) {
 		case DESTROYED:
-			setButtonText("Start Webcam");
-			disableButton(false);
+			disableLink(true);
 			break;
 		case STARTED:
-			setButtonText("Stop");
-			disableButton(false);
+			disableLink(false);
 			break;
 		default:
 			break;
@@ -266,18 +369,14 @@ public class WebcamDemoButton {
 		}
 	}
 
-	private void disableButton(boolean disable) {
-		Platform.runLater(() -> startWebcam.setDisable(disable));
-	}
-
 	/**
-	 * Sets the button text.
+	 * Disable link.
 	 *
-	 * @param text
-	 *          the button text
+	 * @param disable
+	 *          the disable
 	 */
-	private void setButtonText(String text) {
-		Platform.runLater(() -> startWebcam.setText(text));
+	public void disableLink(boolean disable) {
+		Platform.runLater(() -> link.setDisable(disable));
 	}
 
 	/**

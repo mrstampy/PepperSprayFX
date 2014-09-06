@@ -32,6 +32,7 @@
 	
 	<dependencies>
 		<dependency org="com.github.mrstampy" name="PepperSpray-core" rev="0.1-SNAPSHOT"/>
+		<dependency org="com.github.mrstampy" name="PepperSpray-jmdns" rev="0.1-SNAPSHOT"/>
 		<dependency org="org.controlsfx" name="controlsfx" rev="8.0.6"/>
 		
 		<dependency org="ch.qos.logback" name="logback-classic" rev="1.1.2" transitive="false" />

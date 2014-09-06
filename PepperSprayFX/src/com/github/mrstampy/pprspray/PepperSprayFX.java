@@ -20,25 +20,40 @@ package com.github.mrstampy.pprspray;
 
 import io.netty.buffer.ByteBuf;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.effect.GaussianBlur;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.WindowEvent;
 
+import javax.jmdns.ServiceInfo;
+
+import org.controlsfx.control.PopOver;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.dialog.Dialogs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 import com.github.mrstampy.kitchensync.message.inbound.ByteArrayInboundMessageManager;
 import com.github.mrstampy.kitchensync.netty.channel.KiSyChannel;
@@ -65,6 +80,7 @@ import com.google.common.eventbus.Subscribe;
  * The main class for PepperSprayFX.
  */
 public class PepperSprayFX extends Application {
+	private static final Logger log = LoggerFactory.getLogger(PepperSprayFX.class);
 
 	/** The stage. */
 	private Stage stage;
@@ -78,6 +94,29 @@ public class PepperSprayFX extends Application {
 
 	private WebcamDisplay currentDisplay;
 
+	private Scheduler svc = Schedulers.from(Executors.newFixedThreadPool(2));
+
+	private static PepperSprayFX INSTANCE;
+
+	/**
+	 * Gets the instance.
+	 *
+	 * @return the instance
+	 */
+	public static PepperSprayFX getInstance() {
+		return INSTANCE;
+	}
+
+	/**
+	 * Sets the cursor.
+	 *
+	 * @param cursor
+	 *          the cursor
+	 */
+	public static void setCursor(Cursor cursor) {
+		getInstance().stage.getScene().setCursor(cursor);
+	}
+
 	/**
 	 * The Constructor initializes state and registers a
 	 * {@link PepperSprayFXNegotiationSubscriber} with the
@@ -85,6 +124,7 @@ public class PepperSprayFX extends Application {
 	 */
 	public PepperSprayFX() {
 		super();
+		INSTANCE = this;
 		initSystem();
 		NegotiationEventBus.register(new PepperSprayFXNegotiationSubscriber());
 	}
@@ -124,6 +164,17 @@ public class PepperSprayFX extends Application {
 
 		stage.centerOnScreen();
 		stage.show();
+
+		stage.addEventFilter(KeyEvent.KEY_PRESSED, e -> handleKeyPress(e));
+	}
+
+	/**
+	 * Gets the stage.
+	 *
+	 * @return the stage
+	 */
+	public Stage getStage() {
+		return stage;
 	}
 
 	/**
@@ -135,6 +186,120 @@ public class PepperSprayFX extends Application {
 	private void handleRightClick(MouseEvent e) {
 		if (e.getButton() != MouseButton.SECONDARY) return;
 
+		// exitCheck();
+	}
+
+	private void handleKeyPress(KeyEvent e) {
+		if (!isOfConcern(e)) return;
+
+		switch (e.getCode()) {
+		case ESCAPE:
+			exitCheck();
+			break;
+		case H:
+			showHelp();
+			break;
+		case C:
+			showAvailablePepps();
+			break;
+		default:
+			break;
+		}
+
+	}
+
+	private void showAvailablePepps() {
+		CountDownLatch cdl = new CountDownLatch(1);
+
+		svc.createWorker().schedule(() -> disable(cdl));
+		svc.createWorker().schedule(() -> showAvailable(cdl));
+	}
+
+	private void showAvailable(CountDownLatch cdl) {
+		List<ServiceInfo> others = demoButton.getRegistered();
+		cdl.countDown();
+
+		if (others.isEmpty()) {
+			Platform.runLater(() -> createPoptart(getText(" No one to pepper spray. "), "No Friends", 3));
+			return;
+		}
+
+		Platform.runLater(() -> showAvailable(others));
+	}
+
+	private void showAvailable(List<ServiceInfo> others) {
+		AvailableWindow popup = new AvailableWindow(others, address -> svc.createWorker()
+				.schedule(() -> demoButton.initStreamer(address)));
+		log.debug("Showing {} available", others.size());
+		showPopup(popup);
+	}
+
+	private void showPopup(Popup popup) {
+		new RepositioningDragListener(popup);
+		popup.setOpacity(0.75);
+		popup.show(this.stage, this.stage.getX(), this.stage.getY());
+	}
+
+	private void disable(CountDownLatch cdl) {
+		Platform.runLater(() -> demoButton.disableControls(true));
+		KiSyUtils.await(cdl, 10, TimeUnit.SECONDS);
+		Platform.runLater(() -> demoButton.disableControls(false));
+	}
+
+	/**
+	 * Show help.
+	 */
+	public void showHelp() {
+		createPoptart(createHelpContent(), "PepperSpray Help", 5);
+	}
+
+	private void createPoptart(Node content, String title, int fadeSeconds) {
+		PopOver poptart = new PopOver(content);
+
+		poptart.setDetachable(true);
+		poptart.setDetachedTitle(title);
+		poptart.setOpacity(0.5);
+		poptart.show(stage.getScene().getRoot());
+
+		svc.createWorker().schedule(() -> Platform.runLater(() -> demoButton.fadePopOver(poptart)),
+				fadeSeconds,
+				TimeUnit.SECONDS);
+	}
+
+	private Node createHelpContent() {
+		VBox box = new VBox(5);
+
+		box.getChildren().add(getText(""));
+		box.getChildren().add(getText(" h - displays this information "));
+		box.getChildren().add(getText(" c - place a call"));
+		box.getChildren().add(getText(" esc - exit"));
+		box.getChildren().add(getText(""));
+
+		return box;
+	}
+
+	private Text getText(String s) {
+		Text text = new Text(s);
+
+		text.setFill(Color.ROYALBLUE);
+
+		return text;
+	}
+
+	private boolean isOfConcern(KeyEvent e) {
+		switch (e.getCode()) {
+		case ESCAPE:
+		case H:
+		case C:
+			return true;
+		default:
+			break;
+		}
+
+		return false;
+	}
+
+	private void exitCheck() {
 		//@formatter:off
 		Action action = Dialogs
 				.create()
@@ -186,10 +351,8 @@ public class PepperSprayFX extends Application {
 		Popup popup = new Popup();
 		popup.getContent().add(display.getLayout());
 		display.setPopup(popup);
-		popup.centerOnScreen();
-		new RepositioningDragListener(popup);
-		popup.setOpacity(0.75);
-		popup.show(this.stage);
+		showPopup(popup);
+		popup.addEventFilter(WindowEvent.WINDOW_HIDDEN, e -> demoButton.destroy());
 	}
 
 	/**
@@ -240,7 +403,7 @@ public class PepperSprayFX extends Application {
 		 * Show negotiations failed.
 		 */
 		private void showNegotiationsFailed(MediaStreamerEvent event) {
-			demoButton.reset();
+			demoButton.disableLink(false);
 
 			//@formatter:off
 			Dialogs
@@ -377,6 +540,13 @@ public class PepperSprayFX extends Application {
 	 *           the exception
 	 */
 	public static void main(String... args) throws Exception {
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				log.error("Uncaught exception on thread {}", t.getName(), e);
+			}
+		});
 		launch(args);
 	}
 
