@@ -37,15 +37,16 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Glow;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
@@ -68,7 +69,7 @@ import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEventBus;
 import com.github.mrstampy.pprspray.core.streamer.webcam.WebcamStreamer;
 import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryEvent;
 import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryEventBus;
-import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryService;
+import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSPepperSprayDiscovery;
 import com.github.sarxos.webcam.Webcam;
 import com.google.common.eventbus.Subscribe;
 
@@ -96,7 +97,7 @@ public class WebcamDemoButton {
 
 	/** The link. */
 	private Hyperlink link = new Hyperlink("PepperSpray-core");
-	
+
 	private Text ipAddress = new Text();
 
 	/** The channel. */
@@ -106,11 +107,11 @@ public class WebcamDemoButton {
 	private WebcamStreamer streamer;
 
 	/** The svc. */
-	private Scheduler svc = Schedulers.from(Executors.newFixedThreadPool(2));
+	private Scheduler svc = Schedulers.from(Executors.newFixedThreadPool(5));
 
 	private CountDownLatch channelInit = new CountDownLatch(1);
 
-	private PepperSprayDiscoveryService<ServiceInfo> discoveryService = JmDNSDiscoveryService.DISCOVERY;
+	private PepperSprayDiscoveryService<ServiceInfo> discoveryService = new JmDNSPepperSprayDiscovery();
 
 	/**
 	 * The Constructor.
@@ -212,7 +213,7 @@ public class WebcamDemoButton {
 	 *
 	 * @return the layout
 	 */
-	public VBox getLayout() {
+	public Parent getLayout() {
 		return box;
 	}
 
@@ -240,6 +241,7 @@ public class WebcamDemoButton {
 		initLink();
 		box.getChildren().addAll(label, getFooter(), ipAddress);
 		box.setAlignment(Pos.CENTER);
+		box.setBackground(Background.EMPTY);
 	}
 
 	private void initChannels() {
@@ -247,7 +249,7 @@ public class WebcamDemoButton {
 			Platform.runLater(() -> showInitPopOver());
 			Platform.runLater(() -> disableControls(true));
 			channel = initChannel();
-			
+
 			ipAddress.setText(channel.localAddress().toString());
 
 			discoveryService.registerPepperSprayServices(channel, MediaStreamType.VIDEO);
@@ -331,7 +333,7 @@ public class WebcamDemoButton {
 	 */
 	private void initLabel() {
 		Font existing = label.getFont();
-		Font newf = Font.font(existing.getFamily(), FontWeight.BOLD, FontPosture.ITALIC, 20);
+		Font newf = Font.font(existing.getFamily(), FontWeight.BOLD, 20);
 		label.setFont(newf);
 		label.setFill(Color.ALICEBLUE);
 		label.setEffect(new DropShadow(10, Color.ORANGERED));

@@ -30,12 +30,11 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.effect.GaussianBlur;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Background;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -94,7 +93,7 @@ public class PepperSprayFX extends Application {
 
 	private WebcamDisplay currentDisplay;
 
-	private Scheduler svc = Schedulers.from(Executors.newFixedThreadPool(2));
+	private Scheduler svc = Schedulers.from(Executors.newFixedThreadPool(5));
 
 	private static PepperSprayFX INSTANCE;
 
@@ -146,14 +145,12 @@ public class PepperSprayFX extends Application {
 		this.stage = stage;
 		this.demoButton = new WebcamDemoButton();
 
-		dragListener = new RepositioningDragListener(stage);
-
-		VBox layout = demoButton.getLayout();
-		layout.setBackground(Background.EMPTY);
-		layout.setEffect(new GaussianBlur(0.2));
+		Parent layout = demoButton.getLayout();
 
 		Color c = Color.BLACK;
 		Scene scene = new Scene(layout, new Color(c.getRed(), c.getGreen(), c.getBlue(), 0.25));
+
+		dragListener = new RepositioningDragListener(stage);
 
 		stage.setScene(scene);
 		stage.initStyle(StageStyle.TRANSPARENT);
