@@ -70,6 +70,7 @@ import com.github.mrstampy.pprspray.core.streamer.webcam.WebcamStreamer;
 import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryEvent;
 import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSDiscoveryEventBus;
 import com.github.mrstampy.pprspray.discovery.jmdns.JmDNSPepperSprayDiscovery;
+import com.github.mrstampy.pprspray.jasypt.streamer.webcam.JasyptWebcamImageTransformer;
 import com.github.sarxos.webcam.Webcam;
 import com.google.common.eventbus.Subscribe;
 
@@ -354,6 +355,7 @@ public class WebcamDemoButton {
 		final Webcam webcam = Webcam.getDefault();
 
 		streamer = new WebcamStreamer(webcam, channel, address);
+		streamer.setTransformer(new JasyptWebcamImageTransformer(PepperSprayFX.ENCRYPTOR));
 		streamer.connect();
 		svc.createWorker().schedule(() -> webcam.open());
 	}

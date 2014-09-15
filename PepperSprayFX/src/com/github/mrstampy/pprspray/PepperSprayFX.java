@@ -48,6 +48,7 @@ import javax.jmdns.ServiceInfo;
 import org.controlsfx.control.PopOver;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.dialog.Dialogs;
+import org.jasypt.util.binary.BasicBinaryEncryptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,11 @@ import com.github.mrstampy.pprspray.core.handler.NegotiationAckHandler;
 import com.github.mrstampy.pprspray.core.handler.NegotiationHandler;
 import com.github.mrstampy.pprspray.core.handler.WebcamMediaHandler;
 import com.github.mrstampy.pprspray.core.receiver.MediaProcessor;
+import com.github.mrstampy.pprspray.core.receiver.audio.AudioReceiver;
+import com.github.mrstampy.pprspray.core.receiver.binary.BinaryReceiver;
+import com.github.mrstampy.pprspray.core.receiver.file.FileReceiver;
+import com.github.mrstampy.pprspray.core.receiver.text.TextReceiver;
+import com.github.mrstampy.pprspray.core.receiver.webcam.WebcamReceiver;
 import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEvent;
 import com.github.mrstampy.pprspray.core.streamer.event.MediaStreamerEventBus;
 import com.github.mrstampy.pprspray.core.streamer.negotiation.AcceptingNegotationSubscriber;
@@ -69,6 +75,7 @@ import com.github.mrstampy.pprspray.core.streamer.negotiation.NegotiationChunk;
 import com.github.mrstampy.pprspray.core.streamer.negotiation.NegotiationEventBus;
 import com.github.mrstampy.pprspray.core.streamer.negotiation.NegotiationMessageUtils;
 import com.github.mrstampy.pprspray.core.streamer.util.MediaStreamerUtils;
+import com.github.mrstampy.pprspray.jasypt.receiver.JasyptMediaTransformer;
 import com.github.mrstampy.pprspray.util.RepositioningDragListener;
 import com.github.mrstampy.pprspray.webcam.WebcamDemoButton;
 import com.github.mrstampy.pprspray.webcam.WebcamDisplay;
@@ -96,6 +103,16 @@ public class PepperSprayFX extends Application {
 	private Scheduler svc = Schedulers.from(Executors.newFixedThreadPool(5));
 
 	private static PepperSprayFX INSTANCE;
+	
+	/**
+	 * An utterly terrible use of cryptography.
+	 */
+	public static final BasicBinaryEncryptor ENCRYPTOR;
+	
+	static {
+		ENCRYPTOR = new BasicBinaryEncryptor();
+		ENCRYPTOR.setPassword("Shhhh");
+	}
 
 	/**
 	 * Gets the instance.
@@ -523,6 +540,29 @@ public class PepperSprayFX extends Application {
 				return wd;
 			default:
 				return null;
+			}
+		}
+		protected void createReceiver(NegotiationChunk event) {
+			int mediaHash = event.getMediaHash();
+			
+			switch (event.getRequestedType()) {
+			case AUDIO:
+				new AudioReceiver(mediaHash);
+				break;
+			case BINARY:
+				new BinaryReceiver(mediaHash);
+				break;
+			case FILE:
+				new FileReceiver(mediaHash);
+				break;
+			case TEXT:
+				new TextReceiver(mediaHash);
+				break;
+			case VIDEO:
+				new WebcamReceiver(mediaHash).setTransformer(new JasyptMediaTransformer(ENCRYPTOR));
+				break;
+			default:
+				break;
 			}
 		}
 
